@@ -6,6 +6,57 @@
 #include "../PlayerObject.cpp"
 #include "../Settings/ObjectSettings.hpp"
 
+namespace
+{
+    // procgen tunables, all read from mod settings (see mod.json)
+    struct ProcgenSettings
+    {
+        float syncOffset;
+        float beatChance;
+        float halfBeatChance;
+        float placeAgainChance;
+        float randomTapChance;
+        float tapBalanceStart;
+        float mashToggleChance;
+        float holdMinSeconds;
+        float holdMaxSeconds;
+        int tapHoldFrames;
+        float terminalVelocityGuard;
+        float blindJumpDistance;
+        float blindScanSeconds;
+        float boundsSafety;
+        float centerBias;
+        float portalFrequency;
+        float specialFrequency;
+
+        static ProcgenSettings load()
+        {
+            auto mod = Mod::get();
+            ProcgenSettings ps;
+            ps.syncOffset = mod->getSettingValue<double>("sync-offset");
+            ps.beatChance = mod->getSettingValue<double>("beat-chance");
+            ps.halfBeatChance = mod->getSettingValue<double>("half-beat-chance");
+            ps.placeAgainChance = mod->getSettingValue<double>("place-again-chance");
+            ps.randomTapChance = mod->getSettingValue<double>("random-tap-chance");
+            ps.tapBalanceStart = mod->getSettingValue<double>("tap-balance-start");
+            ps.mashToggleChance = mod->getSettingValue<double>("mash-toggle-chance");
+            ps.holdMinSeconds = mod->getSettingValue<double>("hold-min-seconds");
+            ps.holdMaxSeconds = mod->getSettingValue<double>("hold-max-seconds");
+            ps.tapHoldFrames = (int)mod->getSettingValue<int64_t>("tap-hold-frames");
+            ps.terminalVelocityGuard = mod->getSettingValue<double>("terminal-velocity-guard");
+            ps.blindJumpDistance = mod->getSettingValue<double>("blind-jump-distance");
+            ps.blindScanSeconds = mod->getSettingValue<double>("blind-scan-seconds");
+            ps.boundsSafety = std::max(0.1f, (float)mod->getSettingValue<double>("bounds-safety"));
+            ps.centerBias = std::max(0.1f, (float)mod->getSettingValue<double>("center-bias"));
+            ps.portalFrequency = mod->getSettingValue<double>("portal-frequency");
+            ps.specialFrequency = mod->getSettingValue<double>("special-frequency");
+            if (ps.holdMinSeconds > ps.holdMaxSeconds)
+                std::swap(ps.holdMinSeconds, ps.holdMaxSeconds);
+            return ps;
+        }
+    };
+}
+
 LayoutGeneratorLayer *LayoutGeneratorLayer::create()
 {
     auto ret = new LayoutGeneratorLayer();
@@ -36,12 +87,13 @@ bool LayoutGeneratorLayer::init()
 void LayoutGeneratorLayer::reset()
 {
     auto mod = Mod::get();
+    const auto ps = ProcgenSettings::load();
 
     m_isBuilding = true;
     m_boundsCeil = 1300.f;
     m_boundsFloor = 90.f;
     m_canPlaceNextFrame = true;
-    m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + .133f; // offset for better sync
+    m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + ps.syncOffset; // offset for better sync (default .133)
     // m_fishId = 0; // no need to reset
     m_gamemodePortalY = 0.f;
     m_halfBeatCount = (int)(m_elapsedTime / (60.f / mod->getSettingValue<float>("bpm")) * 2.f);
@@ -59,7 +111,7 @@ void LayoutGeneratorLayer::reset()
     m_playerTrail.clear();
     m_shouldTap = PoolTap::NO;
     m_shouldTapTimer = 0;
-    m_tapBalance = 3.f; // don't make the player jump straight away
+    m_tapBalance = ps.tapBalanceStart; // don't make the player jump straight away
 }
 
 void LayoutGeneratorLayer::buildStart()
@@ -86,6 +138,7 @@ void LayoutGeneratorLayer::update(float dt)
 
     // playerdata
     auto mod = Mod::get();
+    const auto ps = ProcgenSettings::load();
     auto editor = LevelEditorLayer::get();
     auto pd = new PlayerData();
     pd->setPlayer(editor->m_player1);
@@ -223,21 +276,21 @@ void LayoutGeneratorLayer::update(float dt)
             requireTap |= PoolTap::NO | PoolTap::ANY;
     }
     // avoid reaching terminal velocity (-15.f)
-    else if (pd->velUnscaled.y * pd->getSign() < -10.f &&
+    else if (pd->velUnscaled.y * pd->getSign() < -ps.terminalVelocityGuard &&
              pd->state & (PoolState::NO_BOUNDS | PoolState::GAMEMODE_BALL) && onHalfBeat)
     {
         shouldPlace = true;
         excludeTags |= PoolTag::FALL;
     }
     // beat
-    else if (utils::random::chance(15.0 / 16.0) && onBeat)
+    else if (utils::random::chance(ps.beatChance) && onBeat)
     {
         shouldPlace = true;
-        if (useRandomClicks && !(pd->state & PoolState::HOLD_FLYING) && utils::random::chance(0.5))
+        if (useRandomClicks && !(pd->state & PoolState::HOLD_FLYING) && utils::random::chance(ps.randomTapChance))
             requireTap |= PoolTap::TAP_OR_HOLD;
     }
     // half beat
-    else if ((pd->gamemode & PoolState::FLYING || utils::random::chance(3.0 / 4.0)) && onHalfBeat)
+    else if ((pd->gamemode & PoolState::FLYING || utils::random::chance(ps.halfBeatChance)) && onHalfBeat)
     {
         shouldPlace = true;
     }
@@ -314,7 +367,7 @@ void LayoutGeneratorLayer::update(float dt)
 
                 // place another object soon, because we can
                 // maybe a fish->canPlaceAgain field would be useful in the future? or fish->placeAgainChance?
-                if (utils::random::chance(0.5))
+                if (utils::random::chance(ps.placeAgainChance))
                 {
                     m_placeAgainTimer = 2;
 
@@ -333,7 +386,7 @@ void LayoutGeneratorLayer::update(float dt)
             // PoolTap::TOWARDS_CENTER does not adjust tap balance
 
             // place a no-tap object after a spider tap
-            if (fish->tags & PoolTag::SPIDER && utils::random::chance(0.5))
+            if (fish->tags & PoolTag::SPIDER && utils::random::chance(ps.placeAgainChance))
             {
                 m_placeAgainTimer = 2;
             }
@@ -501,7 +554,7 @@ void LayoutGeneratorLayer::update(float dt)
         else if (m_shouldTap == PoolTap::RANDOM)
         {
             // 50% chance to toggle the jump button, every couple of frames
-            if (utils::random::chance(0.5))
+            if (utils::random::chance(ps.mashToggleChance))
             {
                 m_shouldTapTimer = utils::random::generate<int>(2, 6);
                 if (pd->isClicking())
@@ -547,9 +600,9 @@ void LayoutGeneratorLayer::update(float dt)
                     {
                         // hold for a random duration
                         if (m_shouldTap == PoolTap::HOLD_RANDOM)
-                            m_shouldTapTimer = (int)(utils::random::generate<float>(.03f, .33f) / dt);
+                            m_shouldTapTimer = (int)(utils::random::generate<float>(ps.holdMinSeconds, ps.holdMaxSeconds) / dt);
                         else
-                            m_shouldTapTimer = 3;
+                            m_shouldTapTimer = ps.tapHoldFrames;
                     }
                     m_shouldTap = PoolTap::NO;
                 }
@@ -597,14 +650,15 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
     // auto followAWhileAgo = followFloats[(followIndex - 18) % followFloats.size()];
 
     auto mod = Mod::get();
+    const auto ps = ProcgenSettings::load();
     auto objectWhitelist = mod->getSettingValue<std::unordered_set<int>>("objects");
 
-    const int blindScanBehind = (int)(.3f / dt);
+    const int blindScanBehind = std::max(1, (int)(ps.blindScanSeconds / dt)); // never 0, or the trail lookup goes out of range
     bool isBlind = false;
     if (!mod->getSettingValue<bool>("use-player-clicks") &&
         m_playerTrail.size() > blindScanBehind &&
         pd->state & PoolState::NO_BOUNDS)
-        isBlind = abs(pd->pos.y - m_playerTrail[m_playerTrail.size() - blindScanBehind].pos.y) > 130.f;
+        isBlind = abs(pd->pos.y - m_playerTrail[m_playerTrail.size() - blindScanBehind].pos.y) > ps.blindJumpDistance;
 
     return GameObjectPool::fish(
         [&](const PoolObject *fish)
@@ -639,7 +693,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
             // tapping a green orb that results in the player dying to the floor boundary
             if ((pd->state & PoolState::NO_BOUNDS || pd->isCameraFree()) &&
                 !pd->isUpsideDown() &&
-                pd->pos.y < m_boundsFloor + 135.f &&
+                pd->pos.y < m_boundsFloor + 135.f * ps.boundsSafety &&
                 fish->tags & PoolTag::FALL &&
                 fish->tags & PoolTag::GRAVITY)
                 return 0.f;
@@ -660,21 +714,21 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                 // hitting the bounds kills you
                 if (pd->isUpsideDown())
                 {
-                    if (pd->pos.y < m_boundsFloor + 225.f && fish->tags & PoolTag::JUMP_HIGH)
+                    if (pd->pos.y < m_boundsFloor + 225.f * ps.boundsSafety && fish->tags & PoolTag::JUMP_HIGH)
                         return 0.f;
-                    if (pd->pos.y < m_boundsFloor + 150.f && fish->tags & PoolTag::JUMP)
+                    if (pd->pos.y < m_boundsFloor + 150.f * ps.boundsSafety && fish->tags & PoolTag::JUMP)
                         return 0.f;
                 }
                 else
                 {
-                    if (pd->pos.y > m_boundsCeil - 210.f && fish->tags & PoolTag::JUMP_HIGH)
+                    if (pd->pos.y > m_boundsCeil - 210.f * ps.boundsSafety && fish->tags & PoolTag::JUMP_HIGH)
                         return 0.f;
-                    if (pd->pos.y > m_boundsCeil - 135.f && fish->tags & PoolTag::JUMP)
+                    if (pd->pos.y > m_boundsCeil - 135.f * ps.boundsSafety && fish->tags & PoolTag::JUMP)
                         return 0.f;
                 }
 
                 // if cube is too high, correct it immediately
-                if (pd->pos.y > m_boundsCeil - 210.f)
+                if (pd->pos.y > m_boundsCeil - 210.f * ps.boundsSafety)
                 {
                     if (pd->isUpsideDown() && fish->tags & PoolTag::FALL)
                         return 0.f;
@@ -695,7 +749,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                 float dist = abs(pd->pos.y - mid);
                 float penalty = 1 - dist /
                                         ((m_boundsCeil - m_boundsFloor) *
-                                         (pd->state & (PoolState::GAMEMODE_SHIP | PoolState::GAMEMODE_UFO) ? .1f : .5f));
+                                         (pd->state & (PoolState::GAMEMODE_SHIP | PoolState::GAMEMODE_UFO) ? .1f : .5f) / ps.centerBias);
 
                 // below middle, relative to gravity
                 if (pd->pos.y * pd->getSign() < mid * pd->getSign())
@@ -721,6 +775,12 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                         weight *= penalty;
                 }
             }
+
+            // frequency multipliers
+            if (fish->tags & PoolTag::PORTAL)
+                weight *= ps.portalFrequency;
+            else if (fish->tags & (PoolTag::PAD | PoolTag::RING))
+                weight *= ps.specialFrequency;
 
             return weight;
         });

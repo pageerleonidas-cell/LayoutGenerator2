@@ -14,7 +14,7 @@
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3",
 		"smjs.object-collab": {
-			"version": ">=0.5.4-beta.1",
+			"version": ">=0.5.3-beta.1",
 			"required": false
 		}
 	},
@@ -55,6 +55,150 @@
 			"description": "If enabled, the gameplay will form around your clicks. If not, clicks will be inserted at random.",
 			"type": "bool",
 			"default": false
+		},
+		"title-pacing": {
+			"name": "Pacing",
+			"type": "title"
+		},
+		"sync-offset": {
+			"name": "Sync offset",
+			"description": "Seconds added to the start time so objects line up with the music beat.",
+			"type": "float",
+			"default": 0.133,
+			"min": -1.0,
+			"max": 1.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.01,
+				"slider": false
+			}
+		},
+		"beat-chance": {
+			"name": "Beat chance",
+			"description": "Chance of placing an object on each beat.",
+			"type": "float",
+			"default": 0.9375,
+			"min": 0.0,
+			"max": 1.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.05,
+				"slider": true
+			}
+		},
+		"half-beat-chance": {
+			"name": "Half beat chance",
+			"description": "Chance of placing an object on each half beat. Flying gamemodes always place.",
+			"type": "float",
+			"default": 0.75,
+			"min": 0.0,
+			"max": 1.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.05,
+				"slider": true
+			}
+		},
+		"place-again-chance": {
+			"name": "Place again chance",
+			"description": "Chance of placing a follow-up object shortly after a portal or spider tap.",
+			"type": "float",
+			"default": 0.5,
+			"min": 0.0,
+			"max": 1.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.05,
+				"slider": true
+			}
+		},
+		"title-input": {
+			"name": "Clicks (random mode)",
+			"type": "title"
+		},
+		"tap-balance-start": {
+			"name": "Starting tap balance",
+			"description": "Positive values delay the first jump; negative values encourage jumping straight away.",
+			"type": "float",
+			"default": 3.0,
+			"min": -10.0,
+			"max": 10.0,
+			"enable-if": "!use-player-clicks",
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.5,
+				"slider": false
+			}
+		},
+		"random-tap-chance": {
+			"name": "Tap chance on beat",
+			"description": "Chance that a beat-placed object requires a tap or hold.",
+			"type": "float",
+			"default": 0.5,
+			"min": 0.0,
+			"max": 1.0,
+			"enable-if": "!use-player-clicks",
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.05,
+				"slider": true
+			}
+		},
+		"mash-toggle-chance": {
+			"name": "Mash toggle chance",
+			"description": "Chance of toggling the jump button each check while mashing (ship/wave random).",
+			"type": "float",
+			"default": 0.5,
+			"min": 0.0,
+			"max": 1.0,
+			"enable-if": "!use-player-clicks",
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.05,
+				"slider": true
+			}
+		},
+		"tap-hold-frames": {
+			"name": "Tap hold frames",
+			"description": "How many frames a normal tap is held before release.",
+			"type": "int",
+			"default": 3,
+			"min": 1,
+			"max": 30,
+			"enable-if": "!use-player-clicks",
+			"control": {
+				"arrows": true,
+				"arrow-step": 1,
+				"slider": false
+			}
+		},
+		"hold-min-seconds": {
+			"name": "Min random hold",
+			"description": "Shortest hold, in seconds, for robot-style random holds.",
+			"type": "float",
+			"default": 0.03,
+			"min": 0.01,
+			"max": 2.0,
+			"enable-if": "!use-player-clicks",
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.01,
+				"slider": false
+			}
+		},
+		"hold-max-seconds": {
+			"name": "Max random hold",
+			"description": "Longest hold, in seconds, for robot-style random holds.",
+			"type": "float",
+			"default": 0.33,
+			"min": 0.01,
+			"max": 2.0,
+			"enable-if": "!use-player-clicks",
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.01,
+				"slider": false
+			}
 		},
 		"title-generation": {
 			"name": "What to spawn",
@@ -132,6 +276,107 @@
 			"description": "Adds experimental variations to existing gameplay elements, such as late ring timings and jump pads while flying.",
 			"type": "bool",
 			"default": false
+		},
+		"title-frequency": {
+			"name": "Object frequency",
+			"type": "title"
+		},
+		"portal-frequency": {
+			"name": "Portal frequency",
+			"description": "Multiplier on portal selection weight. 0 disables portals, 1 is default.",
+			"type": "float",
+			"default": 1.0,
+			"min": 0.0,
+			"max": 5.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.25,
+				"slider": true
+			}
+		},
+		"special-frequency": {
+			"name": "Pad and ring frequency",
+			"description": "Multiplier on pad and ring selection weight. 0 disables them, 1 is default.",
+			"type": "float",
+			"default": 1.0,
+			"min": 0.0,
+			"max": 5.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.25,
+				"slider": true
+			}
+		},
+		"title-safety": {
+			"name": "Safety tuning",
+			"type": "title"
+		},
+		"bounds-safety": {
+			"name": "Bounds safety",
+			"description": "Scales how far from the floor/ceiling the cube and robot stay before high jumps are avoided. Higher is safer.",
+			"type": "float",
+			"default": 1.0,
+			"min": 0.25,
+			"max": 2.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.05,
+				"slider": false
+			}
+		},
+		"center-bias": {
+			"name": "Center bias",
+			"description": "How strongly bounded gamemodes steer toward the middle of the play area.",
+			"type": "float",
+			"default": 1.0,
+			"min": 0.25,
+			"max": 4.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.25,
+				"slider": false
+			}
+		},
+		"terminal-velocity-guard": {
+			"name": "Terminal velocity guard",
+			"description": "Falling speed at which the generator forces a catching object (cube/ball).",
+			"type": "float",
+			"default": 10.0,
+			"min": 5.0,
+			"max": 15.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.5,
+				"slider": false
+			}
+		},
+		"blind-jump-distance": {
+			"name": "Blind jump distance",
+			"description": "Vertical travel in the last moments beyond which taps are avoided in random mode.",
+			"type": "float",
+			"default": 130.0,
+			"min": 30.0,
+			"max": 400.0,
+			"enable-if": "!use-player-clicks",
+			"control": {
+				"arrows": true,
+				"arrow-step": 10.0,
+				"slider": false
+			}
+		},
+		"blind-scan-seconds": {
+			"name": "Blind scan window",
+			"description": "Seconds of history used for the blind jump check.",
+			"type": "float",
+			"default": 0.3,
+			"min": 0.05,
+			"max": 2.0,
+			"enable-if": "!use-player-clicks",
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.05,
+				"slider": false
+			}
 		},
 		"debug-trail": {
 			"name": "Debug trail",
