@@ -1,6 +1,7 @@
 # 1.6.0
 
 - Procedural generation tuning is now in the mod settings: pacing, random click behavior, portal/pad/ring frequency, and safety margins
+- Added block frequency and per-gamemode spike shrink settings
 - Fixed a possible out-of-range crash in the blind jump check when frames are slow
 
 

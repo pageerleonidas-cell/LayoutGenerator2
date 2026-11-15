@@ -8,7 +8,7 @@
 	},
 	"id": "profdragon.layoutgenerator",
 	"name": "Layout Generator",
-	"version": "v1.5.0",
+	"version": "v1.6.0",
 	"developer": "ProfDragon",
 	"description": "Procedurally generate Geometry Dash layouts",
 	"dependencies": {
@@ -260,6 +260,76 @@
 				"slider": false
 			}
 		},
+		"spike-shrink-ship": {
+			"name": "Spike shrink: ship",
+			"description": "Extra tightening of the spike corridor in ship. 0 means no extra tightening.",
+			"type": "float",
+			"default": 10.0,
+			"min": 0.0,
+			"max": 50.0,
+			"enable-if": "spike-boundary-enabled",
+			"control": {
+				"arrows": true,
+				"arrow-step": 1.0,
+				"slider": false
+			}
+		},
+		"spike-shrink-wave": {
+			"name": "Spike shrink: wave",
+			"description": "Extra tightening in normal and big wave.",
+			"type": "float",
+			"default": 10.0,
+			"min": 0.0,
+			"max": 50.0,
+			"enable-if": "spike-boundary-enabled",
+			"control": {
+				"arrows": true,
+				"arrow-step": 1.0,
+				"slider": false
+			}
+		},
+		"spike-shrink-ufo": {
+			"name": "Spike shrink: mini UFO",
+			"description": "Extra tightening in mini UFO.",
+			"type": "float",
+			"default": 10.0,
+			"min": 0.0,
+			"max": 50.0,
+			"enable-if": "spike-boundary-enabled",
+			"control": {
+				"arrows": true,
+				"arrow-step": 1.0,
+				"slider": false
+			}
+		},
+		"spike-jump-shrink": {
+			"name": "Spike jump shrink",
+			"description": "Tightening applied around the peak of a normal-size jump.",
+			"type": "float",
+			"default": 15.0,
+			"min": 0.0,
+			"max": 60.0,
+			"enable-if": "spike-boundary-enabled",
+			"control": {
+				"arrows": true,
+				"arrow-step": 1.0,
+				"slider": false
+			}
+		},
+		"spike-jump-shrink-mini": {
+			"name": "Spike jump shrink: mini",
+			"description": "Tightening applied around the peak of a mini jump.",
+			"type": "float",
+			"default": 30.0,
+			"min": 0.0,
+			"max": 60.0,
+			"enable-if": "spike-boundary-enabled",
+			"control": {
+				"arrows": true,
+				"arrow-step": 1.0,
+				"slider": false
+			}
+		},
 		"jump-indicators": {
 			"name": "Jump indicators",
 			"type": "bool",
@@ -297,6 +367,19 @@
 		"special-frequency": {
 			"name": "Pad and ring frequency",
 			"description": "Multiplier on pad and ring selection weight. 0 disables them, 1 is default.",
+			"type": "float",
+			"default": 1.0,
+			"min": 0.0,
+			"max": 5.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 0.25,
+				"slider": true
+			}
+		},
+		"block-frequency": {
+			"name": "Block frequency",
+			"description": "Multiplier on block, ground and platform selection weight. Raise it for fewer special objects relative to blocks, lower it for more. 0 disables blocks.",
 			"type": "float",
 			"default": 1.0,
 			"min": 0.0,

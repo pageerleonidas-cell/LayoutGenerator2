@@ -28,6 +28,12 @@ namespace
         float centerBias;
         float portalFrequency;
         float specialFrequency;
+        float blockFrequency;
+        float spikeShrinkShip;
+        float spikeShrinkWave;
+        float spikeShrinkUfo;
+        float spikeJumpShrink;
+        float spikeJumpShrinkMini;
 
         static ProcgenSettings load()
         {
@@ -50,6 +56,12 @@ namespace
             ps.centerBias = std::max(0.1f, (float)mod->getSettingValue<double>("center-bias"));
             ps.portalFrequency = mod->getSettingValue<double>("portal-frequency");
             ps.specialFrequency = mod->getSettingValue<double>("special-frequency");
+            ps.blockFrequency = mod->getSettingValue<double>("block-frequency");
+            ps.spikeShrinkShip = mod->getSettingValue<double>("spike-shrink-ship");
+            ps.spikeShrinkWave = mod->getSettingValue<double>("spike-shrink-wave");
+            ps.spikeShrinkUfo = mod->getSettingValue<double>("spike-shrink-ufo");
+            ps.spikeJumpShrink = mod->getSettingValue<double>("spike-jump-shrink");
+            ps.spikeJumpShrinkMini = mod->getSettingValue<double>("spike-jump-shrink-mini");
             if (ps.holdMinSeconds > ps.holdMaxSeconds)
                 std::swap(ps.holdMinSeconds, ps.holdMaxSeconds);
             return ps;
@@ -489,11 +501,11 @@ void LayoutGeneratorLayer::update(float dt)
             // shrink the bounds a bit more in certain gamemodes where it's too easy
             float shrink = 0.f;
             if (trail.state & PoolState::GAMEMODE_SHIP)
-                shrink = 10.f;
+                shrink = ps.spikeShrinkShip;
             else if (trail.state & PoolState::GAMEMODE_WAVE && trail.state & (PoolState::SIZE_NORMAL | PoolState::SIZE_BIG))
-                shrink = 10.f;
+                shrink = ps.spikeShrinkWave;
             else if (trail.state & PoolState::GAMEMODE_UFO && trail.state & PoolState::SIZE_MINI)
-                shrink = 10.f;
+                shrink = ps.spikeShrinkUfo;
 
             float evilSpikeMargin = (trail.rectSize.height + spikeSize.height) / 2.f;
             float shrunkSpikeMargin = evilSpikeMargin + std::max(spikeMargin - shrink, 0.f);
@@ -512,7 +524,7 @@ void LayoutGeneratorLayer::update(float dt)
         {
             if (!(midTrail.state & PoolState::GAMEMODE_WAVE))
             {
-                float jumpShrink = std::min(midMaxShrink, midTrail.state & PoolState::SIZE_MINI ? 30.f : 15.f);
+                float jumpShrink = std::min(midMaxShrink, midTrail.state & PoolState::SIZE_MINI ? ps.spikeJumpShrinkMini : ps.spikeJumpShrink);
                 if (leftTrail.pos.y < midTrail.pos.y - 1.f &&
                     pd->pos.y < midTrail.pos.y - 1.f &&
                     !midTrail.isUpsideDown())
@@ -781,6 +793,8 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                 weight *= ps.portalFrequency;
             else if (fish->tags & (PoolTag::PAD | PoolTag::RING))
                 weight *= ps.specialFrequency;
+            else if (fish->tags & PoolTag::BLOCK)
+                weight *= ps.blockFrequency;
 
             return weight;
         });
